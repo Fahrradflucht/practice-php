@@ -8,9 +8,19 @@ class Dijkstra
     public function shortestPath($graph, $start, $dest)
     {
         $this->populateDistanceStore($graph->getNodes());
+        $this->calculateDistances($graph, $start);
         
+        if ($this->getOrigin($dest) == NULL) {
+            $msg = 'There is no path from '.$start.' to '.$dest.'.';
+            throw new InvalidArgumentException($msg);
+        }
+        
+        return $this->getPathFromCalculatedOrigins($start, $dest);
+    }
+    
+    private function calculateDistances($graph, $start)
+    {
         $this->distanceStore[$start]["distance"] = 0;
-        
         $this->setUnevaluated($start);
         
         while (!empty($this->unevaluated)) {
@@ -27,7 +37,7 @@ class Dijkstra
                 $neighbourDistance = $this->distanceStore[$neighbour]["distance"];
                 
                 if ($neighbourDistance == NULL) {
-                    $this->unevaluated[] = $neighbour;
+                    $this->setUnevaluated($neighbour);
                     $this->distanceStore[$neighbour] =
                     [
                         "distance" => $newDistance,
@@ -45,20 +55,27 @@ class Dijkstra
                 }
             }
         }
-        
+    }
+    
+    private function getPathFromCalculatedOrigins($start, $dest)
+    {
         $path = [$dest];
         $node = $dest;
-        while ($node != $start && $this->distanceStore[$node]["origin"] != NULL) {
-            $path = array_merge([$this->distanceStore[$node]["origin"]], $path);
-            $node = $this->distanceStore[$node]["origin"];
+        while ($node != $start) {
+            $path = array_merge([$this->getOrigin($node)], $path);
+            $node = $this->getOrigin($node);
         }
-        
         return $path;
     }
     
     private function setUnevaluated($node)
     {
         $this->unevaluated[] = $node;
+    }
+    
+    private function isUnevaluated($node)
+    {
+        return in_array($node, $this->unevaluated);
     }
     
     private function setEvaluated($node)
@@ -80,23 +97,28 @@ class Dijkstra
     
     private function getUnevaluatedNodeWithShortestDistance()
     {
-        $nodeWithShortestDistance = NULL;
-        $shortestDistance = NULL;
-        
-        foreach ($this->unevaluated as $node) {
-            $nodeDistance = $this->distanceStore[$node]["distance"];
-            
-            if ($shortestDistance == NULL || $nodeDistance < $shortestDistance) {
-                $nodeWithShortestDistance = $node;
-                $shortestDistance = $nodeDistance;
+        return array_reduce
+        (
+            $this->unevaluated,
+            function($shortest, $current)
+            {
+                if($shortest == NULL
+                || $this->getDistance($current) < $this->getDistance($shortest))
+                {
+                    return $current;
+                }
+                return $shortest;
             }
-        }
-        
-        return $nodeWithShortestDistance;
+        );
     }
     
-    private function isUnevaluated($node)
+    private function getDistance($node)
     {
-        return in_array($node, $this->unevaluated);
+        return $this->distanceStore[$node]["distance"];
+    }
+    
+    private function getOrigin($node)
+    {
+        return $this->distanceStore[$node]["origin"];
     }
 }

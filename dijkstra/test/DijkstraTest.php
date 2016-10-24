@@ -36,4 +36,24 @@ class DijkstraTest extends TestCase
             $dijkstra->shortestPath($graph, "a", "d")
         );
     }
+    
+    /**
+    * @expectedExceptionMessage No Path!
+    */
+    public function testThrowsIfNoPath()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'There is no path from a to d.');
+
+        $dijkstra = new Dijkstra();
+        $graph = new Graph();
+        
+        $graph->addNode("a");
+        $graph->addNode("b");
+        $graph->addNode("c");
+        $graph->addNode("d");
+
+        $graph->addNeighbour("a", "b", 4);
+        $graph->addNeighbour("c", "d", 4);
+        $dijkstra->shortestPath($graph, "a", "d");
+    }
 }
